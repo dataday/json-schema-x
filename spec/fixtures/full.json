@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A full schema",
+  "type": "object",
+  "required": [ "email" ],
+  "properties": {
+    "required": { "required": true, "type": "string" },
+    "string": { "type": "string" },
+    "number": { "type": "number" },
+    "object": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    },
+    "array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "url": { "type": "string", "format": "uri" },
+    "email": { "type": "string", "format": "email" },
+    "telephone": { "type": "string", "format": "phone" },
+    "ref": { "$ref": "http://json-schema.org/ref" },
+    "date": { "type": "string", "format": "date" },
+    "time": { "type": "string", "format": "time" },
+    "dateTime": { "type": "string", "format": "date-time" }
+  },
+  "dependencies": {
+    "required": [ "string", "number" ],
+    "url": [ "string" ]
+  }
+}

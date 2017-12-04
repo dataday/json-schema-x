@@ -1,0 +1,53 @@
+---
+# https://github.com/troessner/reek
+exclude_paths:
+  - docs
+  - schema
+  - vendor
+  - spec/support
+
+# https://github.com/troessner/reek/blob/master/docs/Boolean-Parameter.md
+BooleanParameter:
+  enabled: false
+
+# https://github.com/troessner/reek/blob/master/docs/Control-Parameter.md
+ControlParameter:
+  enabled: false
+
+# https://github.com/troessner/reek/blob/master/docs/Feature-Envy.md
+FeatureEnvy:
+  enabled: true
+  exclude:
+    - Utils#add_associations
+    - Utils#get_field_associations
+    - Utils#get_field_property
+    - Utils#get_field_reference
+    - Utils#get_url_template
+    - Schema#add_schema_url
+    - Schema#generate
+
+# https://github.com/troessner/reek/blob/master/docs/Too-Many-Statements.md
+TooManyStatements:
+  enabled: true
+  exclude: []
+  max_statements: 12
+
+# https://github.com/troessner/reek/blob/master/docs/Utility-Function.md
+UtilityFunction:
+  enabled: true
+  exclude:
+    - Utils#add_associations
+    - Utils#is_array_of_strings
+    - Utils#pretty_print_json
+    - Utils#sanitise_string
+    - Utils#update_field_property
+  public_methods_only: false
+
+# [https://github.com/troessner/reek/blob/master/docs/Duplicate-Method-Call.md
+DuplicateMethodCall:
+  enabled: true
+  max_calls: 2
+
+# https://github.com/troessner/reek/blob/master/docs/Nil-Check.md
+NilCheck:
+  enabled: false

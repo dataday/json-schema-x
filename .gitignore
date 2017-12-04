@@ -1,0 +1,10 @@
+.bundle
+.yardoc
+.DS_Store
+vendor
+/bin/**
+!/bin/generate
+!/bin/validate
+/docs/**
+!/docs/.gitkeep
+Gemfile.lock

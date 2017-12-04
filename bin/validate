@@ -1,0 +1,167 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
+
+# https://github.com/mongodb/mongoid
+require 'mongoid'
+# https://ruby-doc.org/stdlib-2.4.2/libdoc/ostruct/rdoc/OpenStruct.html
+require 'ostruct'
+# https://ruby-doc.org/stdlib-2.4.0/libdoc/json/rdoc/JSON.html
+require 'json'
+
+# Validates test data is valid when compared to resulting schema class
+# references and associated JSON Schemas
+# @author dataday
+
+# project root path
+@root = File.expand_path('../', __dir__)
+
+# test validation config
+@config = OpenStruct.new(
+  # root path
+  root: @root,
+  # output path
+  results: "#{@root}/schema/results",
+  # test data
+  source: JSON.parse(DATA.read, symbolize_names: true),
+  # mongoid config
+  mongoid: Mongoid.load!("#{@root}/mongoid.yml", :development)
+)
+
+# test helpers
+require_relative "#{@config.root}/spec/support/helpers"
+
+# Helper for use with &method
+# @see Helpers.get_json_schema
+def get_json_schema(schema)
+  Helpers.get_json_schema(schema)
+end
+
+# Helper for use with &method
+# @see Helpers.update_db_fields
+def update_db_fields(value)
+  Helpers.update_db_fields(value)
+end
+
+# get schema name and json data
+@schemas = Dir["#{@config.results}/*.rb"].map(&method(:get_json_schema))
+
+# scope schema class references
+@schemas.each { |schema| require_relative "#{@config.results}/#{schema.name}" }
+
+begin
+
+# validate test data against JSON Schema and schema class reference
+# validation is also provided on save, the approach is for test purposes
+@schemas.each do |schema|
+
+  # create schema class reference
+  Klass = Object.const_get "#{schema.name}".capitalize
+
+  # check schema name exists
+  if @config.source.key? schema.name
+
+    # assign test data
+    @source = Klass.new(@config.source[schema.name])
+
+    # update test fields
+    data = @source.attributes.dup.transform_values(
+      &method(:update_db_fields)
+    )
+
+    # check JSON Schema validation
+    if Helpers.validate(schema.json, data)
+      puts "#{schema.name} - JSON Schema validation successful"
+      @source.save!
+    end
+  end
+
+  # remove class reference
+  Object.send(:remove_const, :'Klass')
+end
+
+# report mongoid validation errors
+rescue Mongoid::Errors::Validations => error
+  puts "Mongoid::Errors::Validations: #{error.message}"
+end
+
+__END__
+{
+  "address": {
+    "extended_address": "Prime Minister's Office",
+    "street_address": "10 Downing Street",
+    "locality": "London",
+    "region": "United Kingdom",
+    "postal_code": "SW1A 2AA",
+    "country_name": "UK"
+  },
+  "calender": {
+    "dtstart": "1984-01-19T13:00:00Z",
+    "dtend": "1984-01-19T14:00:00Z",
+    "summary": "The odd drinkie at 10 Downing Street",
+    "location": "10 Downing Street, London, United Kingdom, SW1A 2AA",
+    "url": "http://number10.gov.uk",
+    "duration": "T1H00S",
+    "rdate": "1984-01-26T13:00:00Z",
+    "rrule": "WEEKLY",
+    "category": "Work",
+    "description": "The odd drinkie at 10 Downing Street",
+    "geo": {
+      "latitude": 51.503251,
+      "longitude": -0.127895
+    }
+  },
+  "card": {
+    "fn": "James George Hacker",
+    "family_name": "Hacker",
+    "given_name": "James",
+    "additional_name": ["Prime Minister of the United Kingdom"],
+    "honorific_prefix": [
+      "Baron Hacker of Islington",
+      "Right Honourable James \"Jim\" Hacker",
+      "Member of Parliament for Birmingham East"
+    ],
+    "honorific_suffix": ["PM"],
+    "nickname": "British Prime Minister",
+    "url": "https://en.wikipedia.org/wiki/Jim_Hacker",
+    "email": {
+      "type": "work",
+      "value": "email@number10.gov.uk"
+    },
+    "tel": {
+      "type": "work",
+      "value": "020-7219-5206"
+    },
+    "address": {
+      "extended_address": "Prime Minister's Office",
+      "street_address": "10 Downing Street",
+      "locality": "London",
+      "region": "United Kingdom",
+      "postal_code": "SW1A 2AA",
+      "country_name": "UK"
+    },
+    "geo": {
+      "latitude": 51.503251,
+      "longitude": -0.127895
+    },
+    "tz": "GMT",
+    "photo": "//en.wikipedia.org/wiki/Jim_Hacker#/media/File:James_Hacker.jpg",
+    "logo": "",
+    "sound": "",
+    "bday": "1927-06-18",
+    "title": "Right Honourable",
+    "role": "Prime Minister of the United Kingdom",
+    "org": {
+      "organization_name": "Government of the United Kingdom",
+      "organization_unit": "Prime Minister's Office, 10 Downing Street"
+    }
+  },
+  "geo": {
+    "latitude": 51.503251,
+    "longitude": -0.127895
+  },
+  "person": {
+    "first_name": "James",
+    "last_name": "Hacker",
+    "age": 57
+  }
+}

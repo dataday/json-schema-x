@@ -1,0 +1,28 @@
+|
+  # #{data[:schema]}
+  # #{data[:description]}
+
+  class #{data[:title]}
+    include Mongoid::Document
+    include Mongoid::Timestamps
+
+- unless data.nil?
+  = "\n"
+
+  / print fields
+  - data.each do |key, value|
+    - if %I[properties].include?(key) && value.respond_to?(:key?)
+      = partial 'partials/_mongoid.field',
+        locales: { key: key, value: value }
+
+  / print validations
+  - data.each do |key, value|
+    - if %I[required dependencies].include? key
+      = partial 'partials/_mongoid.validation',
+        locales: { key: key, value: value }
+
+= "\n"
+| end
+
+/ pretty print source data
+= "\n\n__END__\n#{pretty_print_json(data)}"

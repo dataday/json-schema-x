@@ -1,0 +1,20 @@
+- if locales.key?(:key) && locales.key?(:value)
+  - key, value = locales.values_at(:key, :value)
+
+  / print field requirements
+  - if key == :required
+    = "\n\n  # required fields"
+    = "\n  validates :#{value * ', :'}, presence: true"
+
+  / print field dependencies
+  - if key == :dependencies
+    - value.each do |dependent, fields|
+
+      / collect field dependencies
+      - add_dependencies(dependent, fields)
+
+    / assert field dependencies
+    - if get_dependencies.size.positive?
+      - get_dependencies.each do |field, dependents|
+        = "\n\n  # :#{field} dependents: #{dependents * ', '}"
+        = "\n  validates :#{field}, presence: true"

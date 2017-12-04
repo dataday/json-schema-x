@@ -1,0 +1,11 @@
+--readme README.md
+--title 'JSON Schema to X'
+--charset utf-8
+--markup markdown
+--exclude ./spec
+--output-dir ./docs
+--embed-mixin ClassMethods
+-
+lib/schema.rb
+lib/schema/utils.rb
+MIT-LICENSE

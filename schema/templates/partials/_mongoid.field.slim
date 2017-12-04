@@ -1,0 +1,15 @@
+- if locales.key?(:key) && locales.key?(:value)
+  - _key, value = locales.values_at(:key, :value)
+
+  - value.each do |field, content|
+
+    / print associations
+    = get_field_associations(content)
+
+    / print references
+    - if content.key?(:ref)
+      |   embeds_one :#{get_field_reference(content)}
+
+    / print fields with type
+    - else
+      |   field :#{field}, type: #{get_field_type(content)}
