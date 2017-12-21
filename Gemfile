@@ -9,7 +9,7 @@ gem 'json-schema', '~> 2.8.0'
 
 group :development do
   gem 'reek', '~> 4.7.1'
-  gem 'yard', '~> 0.8.7.6'
+  gem 'yard', '~> 0.9.12'
   gem 'slim_lint', '~> 0.15.1'
 end
 
