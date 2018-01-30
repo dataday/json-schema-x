@@ -114,43 +114,24 @@ describe Utils do
     end
   end
 
-  # describe '#get_field_schema' do
-  #   context 'when a reference schema is specified' do
-  #     it 'returns the schema' do
-  #       fixtures = [
-  #         { ref: 'foo', result: false },
-  #         { ref: 'bar', result: false },
-  #         { ref: '', result: false },
-  #         { ref: nil, result: false },
-  #         { ref: {}, result: false }
-  #       ]
-  #
-  #       fixtures.each do |fixture|
-  #         result = utility_class.send(:get_field_schema, fixture[:ref])
-  #         puts "get_field_schema: #{result.inspect}"
-  #         expect(result).to eq fixture[:result]
-  #       end
-  #     end
-  #   end
-  #
-  #   context 'when a reference schema is not specified' do
-  #     it 'returns the schema' do
-  #       fixtures = [
-  #         { ref: 'http://domain.co.uk/foo', result: 'foo' },
-  #         { ref: 'http://domain.co.uk/foo#bar', result: 'foo' },
-  #         { ref: 'http://domain.co.uk/#/definitions/foo', result: 'foo' },
-  #         { ref: 'http://domain.co.uk/foo#/definitions/bar', result: 'bar' },
-  #         { ref: 'http://domain.co.uk/foo/#/definitions/bar', result: 'bar' }
-  #       ]
-  #
-  #       fixtures.each do |fixture|
-  #         result = utility_class.send(:get_field_schema, fixture[:ref])
-  #         puts "get_field_schema #{result}"
-  #         expect(result).to eq fixture[:result]
-  #       end
-  #     end
-  #   end
-  # end
+  describe '#get_field_schema' do
+    context 'when a reference is specified' do
+      it 'returns the schema' do
+        fixtures = [
+          { ref: 'foo', result: nil },
+          { ref: 'bar', result: nil },
+          { ref: '', result: nil },
+          { ref: nil, result: nil },
+          { ref: {}, result: nil }
+        ]
+
+        fixtures.each do |fixture|
+          result = utility_class.send(:get_field_schema, fixture[:ref])
+          expect(result).to eq fixture[:result]
+        end
+      end
+    end
+  end
 
   describe '#get_field_reference' do
     context 'when a schema URL is specified' do
