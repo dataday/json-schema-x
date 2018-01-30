@@ -59,35 +59,58 @@ module Utils
     type, type_format = content.values_at(:type, :format)
     return content if type.nil? && type_format.nil?
     # formats have priority over type
-    field_type = type_format ?
-      sanitise_string(type_format, true) :
-      sanitise_string(type, true)
-    result = @types[field_type]
-    "#{result}" if result
+    field_type = sanitise_string(type_format ? type_format : type, true)
+    result = @types[field_type] if @types.key?(field_type)
+    "#{result}"
   end
 
-  # Gets schema reference (schema URL)
+  # Determines if a property is available
+  # @param obj [Hash] object
+  # @param key [Symbol] property key
+  # @return [Boolean] true for success, otherwise false
+  def has_field_reference(obj, key)
+    value = obj[key] if obj.is_a? Hash
+    return value.nil? ? false : !value.empty?
+  end
+
+  # Determines object has reference (schema URL)
+  # @param reference [String] reference
+  # @return [String] formatted string
+  def get_field_schema(reference)
+    schema = get_url(reference, :reference) if reference.is_a? String
+    return [
+      schema['segments'] || nil,
+      schema['fragments'] || nil
+    ] - ['', nil] if schema.is_a? Hash
+  end
+
+  def get_fragments(fragments)
+    # find matching fragments
+    return fragments.find do |value|
+      # match name space
+      match = /(?:\/definitions\/(.+))/.match(value)
+      # return matched name space
+      return match[1] unless match.nil?
+    end
+  end
+
+  def get_segments(segments)
+    # return first segment if no definitions exist
+    segments.first
+  end
+
+  # Gets schema field reference (schema URL)
   # @param type [String] type value
   # @return [String] formatted string
   def get_field_reference(content)
-    reference = get_url(content[:ref], :reference)
-    return content[:ref] if reference.nil?
-    fragments = reference["fragments"]
-    segments = reference["segments"]
-    # inspect fragments
-    # @todo: abstract fragment evaluation out
-    unless fragments.nil?
-      # find matching fragments
-      match = fragments.find { |value|
-        # match name space
-        name_space = %r{\/definitions\/(.+)}.match(value)
-        # return matched name space
-        return name_space[1] unless name_space.nil?
-      }
-      return match unless match.nil?
+    segments, fragments = get_field_schema(content[:ref])
+    # fragments first
+    results = get_fragments(fragments) unless fragments.nil?
+    # segments second
+    unless segments.nil? || results
+      results = get_segments(segments) unless segments.empty?
     end
-    # return first segment if no definitions exist
-    return segments.first unless segments.nil?
+    results
   end
 
   # Sanitises a string to the expected format
@@ -128,8 +151,9 @@ module Utils
   # @param source [Mixed] source object
   # @return [Boolean] true if successful, otherwise false
   def is_array_of_strings(source)
-    if source.is_a?(Array) && !source.empty?
-      return source.all?{ |value| value.is_a? String }
+    if source.is_a?(Array)
+      arr = source - ['', nil]
+      return arr.all?{ |value| value.is_a? String } unless arr.empty?
     end
     false
   end
@@ -140,7 +164,8 @@ module Utils
   # @see Addressable::Template
   def get_url_template(template)
     schema = config.get(:schema)
-    url = schema[:urls].fetch(template, schema[:urls][:version])
+    version = schema[:urls][:version]
+    url = schema[:urls].fetch(template, version)
     Addressable::Template.new(url)
   end
 
@@ -149,7 +174,7 @@ module Utils
   # @param template [Symbol] template name
   # @return [Hash] component parts of the URL
   def get_url(url, template)
-    get_url_template(template).extract(url)
+    get_url_template(template).extract(url) unless url.nil?
   end
 
   # Adds field dependencies for use with validation
@@ -236,10 +261,11 @@ module Utils
     results.push "items: #{type}" if type
 
     ref = field[:ref]
-    if ref
-      ref_key = get_field_reference(field).capitalize
+    ref_key = get_field_reference(field)
+
+    if ref && ref_key
       results.push "reference: #{ref}
-  # @todo: specify 'embedded_in :#{schema[:name]}' within class #{ref_key}"
+  # @todo: specify 'embedded_in :#{schema[:name]}' within class #{ref_key.capitalize}"
     end
 
     results

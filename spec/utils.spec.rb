@@ -23,15 +23,15 @@ describe Utils do
 
   describe '#raise_error' do
     context 'when a error is specified' do
-      it 'raises the error' do
+      it 'raises a error' do
         expect { utility_class.raise_error(Exception) }.to raise_error Exception
       end
     end
   end
 
   describe '#get_field_type' do
-    context 'when a type is specified but format is not specified' do
-      it 'returns the type' do
+    context 'when a field type is specified, but a format is not' do
+      it 'returns the field type' do
         fixtures = [
           { type: 'null', result: 'Null' },
           { type: 'integer', result: 'Integer' },
@@ -49,16 +49,16 @@ describe Utils do
       end
     end
 
-    context 'when a type and format are both specified' do
-      it 'returns the format' do
+    context 'when a field type and format are specified' do
+      it 'returns the field format' do
         fixtures = [
           { type: 'null', format: 'time', result: 'Time' },
-          { type: 'null', format: 'date', result: 'Date' },
-          { type: 'null', format: 'date_time', result: 'DateTime' },
-          { type: 'null', format: 'email', result: 'String' },
-          { type: 'null', format: 'phone', result: 'String' },
-          { type: 'null', format: 'geo', result: 'Hash' },
-          { type: 'null', format: 'adr', result: 'Hash' }
+          { type: 'integer', format: 'date', result: 'Date' },
+          { type: 'array', format: 'date_time', result: 'DateTime' },
+          { type: 'object', format: 'email', result: 'String' },
+          { type: 'number', format: 'phone', result: 'String' },
+          { type: 'string', format: 'geo', result: 'Hash' },
+          { type: 'boolean', format: 'adr', result: 'Hash' }
         ]
 
         fixtures.each do |fixture|
@@ -68,8 +68,8 @@ describe Utils do
       end
     end
 
-    context 'when neither type or format are specified' do
-      it 'returns original input' do
+    context 'when a field type and format are not specified' do
+      it 'returns no field type' do
         fixture = {}
         result = utility_class.send(:get_field_type, fixture)
         expect(result).to eq fixture
@@ -77,19 +77,90 @@ describe Utils do
     end
   end
 
-  describe '#get_field_reference' do
-    context 'when a valid reference is specified' do
-      it 'returns the expected name space' do
+  describe '#has_field_reference' do
+    context 'when a field reference is specified' do
+      it 'returns true' do
         fixtures = [
-          { ref: 'http://domain.co.uk/geo', result: 'geo' },
-          { ref: 'http://domain.co.uk/geo#foo', result: 'geo' },
-          { ref: 'http://domain.co.uk/#/definitions/geo', result: 'geo' },
-          { ref: 'http://domain.co.uk/address', result: 'address' },
-          { ref: 'http://domain.co.uk/address#foo', result: 'address' },
-          {
-            ref: 'http://domain.co.uk/schema#/definitions/address',
-            result: 'address'
-          }
+          { ref: 'foo', key: :ref, result: true },
+          { ref: 'bar', key: :ref, result: true }
+        ]
+
+        fixtures.each do |fixture|
+          result = utility_class.send(
+            :has_field_reference,
+            fixture, fixture[:key]
+          )
+          expect(result).to eq fixture[:result]
+        end
+      end
+    end
+
+    context 'when a field reference is not specified' do
+      it 'returns false' do
+        fixtures = [
+          { foo: '', key: :ref, result: false },
+          { ref: nil, key: :ref, result: false },
+          { ref: '', key: :ref, result: false }
+        ]
+
+        fixtures.each do |fixture|
+          result = utility_class.send(
+            :has_field_reference,
+            fixture, fixture[:key]
+          )
+          expect(result).to eq fixture[:result]
+        end
+      end
+    end
+  end
+
+  # describe '#get_field_schema' do
+  #   context 'when a reference schema is specified' do
+  #     it 'returns the schema' do
+  #       fixtures = [
+  #         { ref: 'foo', result: false },
+  #         { ref: 'bar', result: false },
+  #         { ref: '', result: false },
+  #         { ref: nil, result: false },
+  #         { ref: {}, result: false }
+  #       ]
+  #
+  #       fixtures.each do |fixture|
+  #         result = utility_class.send(:get_field_schema, fixture[:ref])
+  #         puts "get_field_schema: #{result.inspect}"
+  #         expect(result).to eq fixture[:result]
+  #       end
+  #     end
+  #   end
+  #
+  #   context 'when a reference schema is not specified' do
+  #     it 'returns the schema' do
+  #       fixtures = [
+  #         { ref: 'http://domain.co.uk/foo', result: 'foo' },
+  #         { ref: 'http://domain.co.uk/foo#bar', result: 'foo' },
+  #         { ref: 'http://domain.co.uk/#/definitions/foo', result: 'foo' },
+  #         { ref: 'http://domain.co.uk/foo#/definitions/bar', result: 'bar' },
+  #         { ref: 'http://domain.co.uk/foo/#/definitions/bar', result: 'bar' }
+  #       ]
+  #
+  #       fixtures.each do |fixture|
+  #         result = utility_class.send(:get_field_schema, fixture[:ref])
+  #         puts "get_field_schema #{result}"
+  #         expect(result).to eq fixture[:result]
+  #       end
+  #     end
+  #   end
+  # end
+
+  describe '#get_field_reference' do
+    context 'when a schema URL is specified' do
+      it 'returns the namespace' do
+        fixtures = [
+          { ref: 'http://domain.co.uk/foo', result: 'foo' },
+          { ref: 'http://domain.co.uk/foo#bar', result: 'foo' },
+          { ref: 'http://domain.co.uk/#/definitions/foo', result: 'foo' },
+          { ref: 'http://domain.co.uk/foo#/definitions/bar', result: 'bar' },
+          { ref: 'http://domain.co.uk/foo/#/definitions/bar', result: 'bar' }
         ]
 
         fixtures.each do |fixture|
@@ -98,10 +169,15 @@ describe Utils do
         end
       end
     end
-    context 'when a invalid reference is specified' do
-      it 'returns the original reference' do
+
+    context 'when a invalid schema URL is specified' do
+      it 'returns nothing' do
         fixtures = [
-          { ref: '', result: '' }
+          { ref: '', result: nil },
+          # { ref: 'http://', result: nil },
+          { ref: 'http://domain.co.uk', result: nil },
+          { ref: 'http://domain.co.uk/', result: nil },
+          { ref: 'http://domain.co.uk/#', result: nil }
         ]
 
         fixtures.each do |fixture|
@@ -113,27 +189,18 @@ describe Utils do
   end
 
   describe '#sanitise_string' do
-    context 'when alphanumberic and symbols are specified' do
-      it 'returns symbolised characters with hyphen preserved' do
-        fixture = { input: '&d^/?><-+=7^d^9', result: :'d-7d9' }
-
-        result = utility_class.send(:sanitise_string, fixture[:input])
-        expect(result).to eq fixture[:result]
-      end
-
-      it 'returns symbolised characters with underscore preserved' do
-        fixture = { input: '&d^/?><_+=7^d^9', result: :d_7d9 }
-
-        result = utility_class.send(:sanitise_string, fixture[:input])
-        expect(result).to eq fixture[:result]
-      end
-    end
-
-    context 'when characters starting with a number are specified' do
-      it 'returns symbolised characters starting with a number' do
+    context 'when mixed characters, alphanumberic + symbols, and case are specified' do
+      it 'returns valid symbolised characters, preserving case and format' do
         fixtures = [
-          { input: '9^7^d^d', result: :'97dd' },
-          { input: '7^d^9d^', result: :'7d9d' }
+          { input: '&foo^/?><-+=0^bar^1', result: :'foo-0bar1' },
+          { input: '&foo^/?><_+=0^bar^1', result: :foo_0bar1 },
+          { input: '&foo^/?><-_+=0^bar^1', result: :'foo-_0bar1' },
+          { input: '&1^0?<foo+=0^bar^1', result: :'10foo0bar1' },
+          { input: '&1^?<foo+=0^bar^1', result: :'1foo0bar1' },
+          { input: '&FOO^?<BAR+=^^', result: :FOOBAR },
+          { input: '&BAR^?<FOO+=BAR^^', result: :BARFOOBAR },
+          { input: '&1^?<0+=^^', result: :'10' },
+          { input: '&BAR^?<FOO+=BAR^^', result: :BARFOOBAR }
         ]
 
         fixtures.each do |fixture|
@@ -143,21 +210,7 @@ describe Utils do
       end
     end
 
-    context 'when UPPERCASE is specified' do
-      it 'returns symbolised UPPERCASE characters' do
-        fixtures = [
-          { input: 'FOOBAR', result: :FOOBAR },
-          { input: 'MOREFOOBAR', result: :MOREFOOBAR }
-        ]
-
-        fixtures.each do |fixture|
-          result = utility_class.send(:sanitise_string, fixture[:input])
-          expect(result).to eq fixture[:result]
-        end
-      end
-    end
-
-    context 'when camelCase is specified without snake_case conversion' do
+    context 'when camelCase is specified but snake_case conversion is not' do
       it 'returns symbolised camelCase characters' do
         fixtures = [
           { input: 'fooBar', result: :fooBar },
@@ -171,7 +224,7 @@ describe Utils do
       end
     end
 
-    context 'when camelCase is specified with snake_case conversion' do
+    context 'when camelCase and snake_case conversion are specified' do
       it 'returns symbolised snake_case characters' do
         fixtures = [
           { input: 'fooBar', result: :foo_bar },
@@ -185,7 +238,7 @@ describe Utils do
       end
     end
 
-    context 'when snake_case is specified without snake_case conversion' do
+    context 'when snake_case is specified but snake_case conversion is not' do
       it 'returns symbolised snake_case characters' do
         fixtures = [
           { input: 'foo_bar', result: :foo_bar },
@@ -199,7 +252,7 @@ describe Utils do
       end
     end
 
-    context 'when snake_case is specified with snake_case conversion' do
+    context 'when snake_case and snake_case conversion are specified' do
       it 'returns symbolised snake_case characters' do
         fixtures = [
           { input: 'foo_bar', result: :foo_bar },
@@ -215,8 +268,8 @@ describe Utils do
   end
 
   describe '#symbolise_array_strings' do
-    context 'when a term is specified' do
-      it 'returns a list containing the symbolised term' do
+    context 'when a single term is specified' do
+      it 'returns a list containing a single symbolised term' do
         fixtures = [
           { input: 'fooBar', result: [:foo_bar] },
           { input: 'FooBar', result: [:foo_bar] },
@@ -234,8 +287,8 @@ describe Utils do
   end
 
   describe '#normalise_array_value' do
-    context 'when a list of terms is specified' do
-      it 'returns a list containing the symbolised terms' do
+    context 'when multiple terms are specified' do
+      it 'returns a list containing multiple symbolised terms' do
         fixture = {
           input: %w[fooBar FooBar foo_bar foo-bar foobar],
           result: %i[foo_bar foo_bar foo_bar foo_bar foobar]
@@ -248,8 +301,8 @@ describe Utils do
   end
 
   describe '#is_array_of_strings' do
-    context 'when an list of terms is specified' do
-      it 'returns true for success' do
+    context 'when multiple terms are specified' do
+      it 'returns positively' do
         fixture = {
           input: %w[fooBar FooBar foo_bar foo-bar foobar],
           result: true
@@ -260,46 +313,27 @@ describe Utils do
       end
     end
 
-    context 'when an list of numbers is specified' do
-      it 'returns false for failure' do
-        fixture = {
-          input: [0, 1, 2, 3],
-          result: false
-        }
+    context 'when a invalid term is specified' do
+      it 'returns negatively' do
+        fixtures = [
+          { input: nil, result: false },
+          { input: '', result: false },
+          { input: [], result: false },
+          { input: [0, 1, 2, 3], result: false },
+          { input: ['', '', '', ''], result: false }
+        ]
 
-        result = utility_class.send(:is_array_of_strings, fixture[:input])
-        expect(result).to eq fixture[:result]
-      end
-    end
-
-    context 'when an empty list is specified' do
-      it 'returns false for failure' do
-        fixture = {
-          input: [],
-          result: false
-        }
-
-        result = utility_class.send(:is_array_of_strings, fixture[:input])
-        expect(result).to eq fixture[:result]
-      end
-    end
-
-    context 'when a invalid list is specified' do
-      it 'returns false for failure' do
-        fixture = {
-          input: '',
-          result: false
-        }
-
-        result = utility_class.send(:is_array_of_strings, fixture[:input])
-        expect(result).to eq fixture[:result]
+        fixtures.each do |fixture|
+          result = utility_class.send(:is_array_of_strings, fixture[:input])
+          expect(result).to eq fixture[:result]
+        end
       end
     end
   end
 
   describe '#get_url_template' do
-    context 'when a pre-configured template is specified' do
-      it 'returns a valid template reference' do
+    context 'when a format is specified' do
+      it 'returns a format' do
         fixtures = [{
           input: :version,
           result: '{scheme}://{host}{/segments*}{#fragment}'
@@ -309,6 +343,9 @@ describe Utils do
         }, {
           input: :definition,
           result: '#/definitions{/segments*}'
+        }, {
+          input: :unknown,
+          result: '{scheme}://{host}{/segments*}{#fragment}'
         }]
 
         fixtures.each do |fixture|
@@ -317,51 +354,44 @@ describe Utils do
         end
       end
     end
-
-    context 'when a unconfigured template is specified' do
-      it 'returns the \'version\' template reference' do
-        fixture = {
-          input: :unknown,
-          result: '{scheme}://{host}{/segments*}{#fragment}'
-        }
-
-        result = utility_class.send(:get_url_template, fixture[:input])
-        expect(result.pattern).to eq fixture[:result]
-      end
-    end
   end
 
   describe '#get_url' do
-    context 'when a URL and template type are specified' do
-      it 'returns hash with valid results' do
+    context 'when a format is specified' do
+      it 'returns the expected namespace' do
         fixtures = [{
           input: 'http://domain.co.uk/foo',
-          type: :reference,
+          format: :reference,
           result: 'foo'
         }, {
           input: 'http://domain.co.uk/bar',
-          type: :reference,
+          format: :reference,
           result: 'bar'
         }, {
-          input: 'http://json-schema.org/draft-04/schema#',
-          type: :version,
+          input: 'http://domain.co.uk/draft-04/foo#',
+          format: :version,
           result: 'draft-04'
         }, {
-          input: 'http://json-schema.org/schema#',
-          type: :version,
-          result: 'schema'
-        }, {
-          input: '#/definitions/foo',
-          type: :definition,
+          input: 'http://domain.co.uk/foo#',
+          format: :unknown,
           result: 'foo'
         }, {
-          input: '#/definitions/bar',
-          type: :definition,
-          result: 'bar'
+          input: 'http://domain.co.uk/foo#',
+          format: :version,
+          result: 'foo'
+        }, {
+          input: '#/definitions/foo',
+          format: :definition,
+          result: 'foo'
         }]
 
         fixtures.each do |fixture|
-          result = utility_class.send(:get_url, fixture[:input], fixture[:type])
+          result = utility_class.send(
+            :get_url,
+            fixture[:input],
+            fixture[:format]
+          )
+
           expect(result).to be_kind_of Hash
           expect(result['segments'].first).to eq fixture[:result]
         end
@@ -370,8 +400,8 @@ describe Utils do
   end
 
   describe '#add_dependencies' do
-    context 'when two dependents point at the same dependency' do
-      it 'returns a normalised version of dependency relationship' do
+    context 'when different dependents relate to the same dependency' do
+      it 'returns the dependency as owner' do
         fixture = {
           input: {
             dependent_one: [:dependency_one],
@@ -409,8 +439,8 @@ describe Utils do
       end
     end
 
-    context 'when two dependents point at different dependencies' do
-      it 'returns a valid version of the dependency relationship' do
+    context 'when different dependents relate to different dependencies' do
+      it 'returns the expected dependency' do
         fixture = {
           input: {
             dependent_one: [:dependency_one],
@@ -451,7 +481,7 @@ describe Utils do
 
   describe '#get_dependencies' do
     context 'when no dependencies are specified' do
-      it 'returns an empty object' do
+      it 'returns a empty list of dependencies' do
         result = utility_class.send(:get_dependencies)
         expect(result).to be_kind_of Hash
         expect(result).to be_empty
@@ -460,13 +490,13 @@ describe Utils do
   end
 
   describe '#get_field_property' do
-    context 'when a invalid property is specified' do
-      it 'returns an empty list' do
+    context 'when a invalid format is specified' do
+      it 'returns a empty list of formats' do
         fixture = {
           input: {
-            source: {
-              parent: {
-                required: true
+            data: {
+              field: {
+                property: true
               }
             }
           },
@@ -476,33 +506,7 @@ describe Utils do
         result = utility_class.send(
           :get_field_property,
           fixture[:input],
-          :unrequired
-        )
-
-        expect(result.to_a).to eq fixture[:result]
-      end
-    end
-
-    context 'when a property with identical parent fields is specified' do
-      it 'returns a list containing one reference to the parent field' do
-        fixture = {
-          input: {
-            source: {
-              parent: {
-                required: true
-              }
-            },
-            parent: {
-              required: true
-            }
-          },
-          result: [:parent]
-        }
-
-        result = utility_class.send(
-          :get_field_property,
-          fixture[:input],
-          :required
+          :unkown
         )
 
         expect(result.to_a).to eq fixture[:result]
@@ -510,22 +514,22 @@ describe Utils do
     end
 
     context 'when a valid property is specified' do
-      it 'returns a list containing the parent field of that property' do
+      it 'returns the expected field' do
         fixture = {
           input: {
-            source: {
-              parent: {
-                required: true
+            data: {
+              field: {
+                property: true
               }
             }
           },
-          result: [:parent]
+          result: %i(field)
         }
 
         result = utility_class.send(
           :get_field_property,
           fixture[:input],
-          :required
+          :property
         )
 
         expect(result.to_a).to eq fixture[:result]
@@ -533,36 +537,76 @@ describe Utils do
     end
   end
 
+    context 'when a property name matches a field name' do
+      it 'returns the expected field names' do
+        fixtures = [{
+          input: {
+            data: {
+              sub_field: {
+                property: true
+              }
+            },
+            field: {
+              property: true
+            }
+          },
+          result: [:sub_field, :field]
+        }, {
+          input: {
+            data: {
+              field: {
+                property: true
+              }
+            },
+            field: {
+              property: true
+            }
+          },
+          result: [:field]
+        }]
+
+        fixtures.each do |fixture|
+          result = utility_class.send(
+            :get_field_property,
+            fixture[:input],
+            :property
+          )
+
+          expect(result.to_a.sort).to eq fixture[:result].sort
+        end
+      end
+    end
+
   describe '#update_field_property' do
-    context 'when duplicate list values are specified' do
-      it 'returns a list of unique values' do
+    context 'when identical list values are specified' do
+      it 'returns a condensed list of values' do
         fixture = {
           input: {
-            required: [:item_one, :item_two, :item_one]
+            property: [:item_one, :item_two, :item_one]
           },
           result: {
-            required: [:item_one, :item_two]
+            property: [:item_one, :item_two]
           }
         }
 
         result = utility_class.send(
           :update_field_property,
           fixture[:input],
-          :required
+          :property
         )
 
-        item_one = fixture[:result][:required].first
-        item_two = fixture[:result][:required].last
+        item_one = fixture[:result][:property].first
+        item_two = fixture[:result][:property].last
 
-        expect(result[:required].count(item_one)).to eq 1
-        expect(result[:required].count(item_two)).to eq 1
+        expect(result[:property].count(item_one)).to eq 1
+        expect(result[:property].count(item_two)).to eq 1
       end
     end
   end
 
   describe '#add_associations' do
-    context 'when single associations are specified' do
-      it 'returns a list containing the stated association' do
+    context 'when a field is specified' do
+      it 'returns the expected field description' do
         fixtures = [{
           input: { description: 'A description' },
           result: ['description: A description']
@@ -585,8 +629,8 @@ describe Utils do
       end
     end
 
-    context 'when multiple associations are specified' do
-      it 'returns a list containing the stated associations' do
+    context 'when multiple field associations are specified' do
+      it 'returns the expected field descriptions' do
         fixture = {
           input: {
             description: 'A description',
@@ -610,8 +654,8 @@ describe Utils do
   end
 
   describe '#get_field_associations' do
-    context 'when multiple associations are specified' do
-      it 'returns a string of the stated associations' do
+    context 'when multiple field associations are specified' do
+      it 'returns the expected field description' do
         fixture = {
           input: {
             description: 'A description',
@@ -625,7 +669,7 @@ describe Utils do
     end
 
     context 'when no associations are specified' do
-      it 'returns a string containing a line break' do
+      it 'returns a single line break' do
         fixture = {
           input: {
             foo: 'bar',
@@ -641,8 +685,8 @@ describe Utils do
 
   # @todo: stub partial response, and use a spec helper!
   describe '#partial' do
-    context 'when a partial file is created without locales' do
-      it 'returns a blank string' do
+    context 'when requested without locales' do
+      it 'returns a empty string' do
         result = utility_class.send(
           :partial,
           'partials/_mongoid.field',
@@ -653,8 +697,8 @@ describe Utils do
       end
     end
 
-    context 'when a partial file is created with locales' do
-      it 'returns a populated partial containing one field reference' do
+    context 'when requested with locales' do
+      it 'returns the expected field reference' do
         result = utility_class.send(
           :partial,
           'partials/_mongoid.field',
